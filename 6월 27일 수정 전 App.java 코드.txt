@@ -1,0 +1,86 @@
+package nstart;
+
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.awt.*;
+/**
+ * Hello world!
+ *
+ */
+public class App 
+{
+	//메인함수, IOException
+    public static void main( String[] args ) throws IOException
+    {
+    	PointerInfo Mpointer = null;
+        ServerSocket serverSocket =null;//서버소켓 생성
+        Socket clientSocket=null;//서버소켓이 지정한 포트를 타고온 상대 ip를 저장할 수 있다.
+        PrintWriter out = null;//String 타입의 문자를 보낼수 있는 함수
+        BufferedReader in=null;//stream 타입의 문자를 읽어서 저장할 수 있는 함수
+        
+        //6월 27일 수정 시작
+        double V0_x=0 ,V0_y = 0; // 처음 속도
+        double t = 1; // 시간 // 변경 
+        //6월 27일 수정 끝
+        int idx = 0; 
+        int x=0,y=0;
+        serverSocket=new ServerSocket(8110);//서버소켓 생성
+        
+        try {
+        	//서버소켓을 만들고 연결을 기다린다.
+        	clientSocket = serverSocket.accept();//클라이언트로부터 데이터가 오는것을 감지한다.
+        	System.out.println("클라이언트 연결");
+        	Mpointer=MouseInfo.getPointerInfo();
+        	Point p=Mpointer.getLocation();
+        	x=(int)p.getX();
+        	y=(int)p.getY();
+        	System.out.println(x+"  "+y);
+        	//클라이언트로 부터 데이터를 받는다.ㄴ
+        	out = new PrintWriter(clientSocket.getOutputStream(),true);//String 타입을 stream 형태로 변환하여 전송한다는 뜻
+        	
+        	in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));//소케세서 넘어오는 stream형태의 문자를 얻은 후 읽어 들여서 
+        																				  //bufferstream 형태로 in 에 저장
+        	
+        	while(true) {
+        		String inputLine = null;//in으로 받아들인 데이터를 저장할 string 생성
+        		inputLine = in.readLine();//in에 저장된 데이터를 String 형태로 변환 후 읽어들여서 String에 저장
+        		//System.out.println("클라이언트로 부터 받은 문자열 :"+inputLine);//저장된값 콘솔 출력
+        		p=MouseInfo.getPointerInfo().getLocation();
+        		x=(int)p.getX();
+            	y=(int)p.getY();
+            	System.out.println(inputLine);
+            	Robot robot=new Robot();
+        		if(inputLine.contains("@")) {
+        		idx=inputLine.indexOf("@");
+        		
+        		
+        		
+        		
+        		//robot.mouseMove(x+(int)Float.parseFloat(inputLine.substring(0,idx)), y+(int)Float.parseFloat(inputLine.substring(idx+1)));
+        		
+        		}
+        		
+        		out.println(inputLine);//들어온값을 다시 되돌려 보낸다. String이 stream으로 변환되어 전송됨
+        		if(inputLine.contentEquals("quit")) {//만약 받은 값이 quit 일경우 종료
+        			break;
+        		}
+        		if(inputLine.contentEquals("100")) {
+        			System.out.println("마우스를 이동합니다");
+        		    robot.mouseMove(200, 200);
+        		}
+        		
+        	}
+        	out.close();
+        	in.close();
+        	clientSocket.close();
+        	serverSocket.close();//열린 모든것을 닫아준다.
+        }catch(Exception e) {
+        	e.printStackTrace();
+        }
+    }
+}

@@ -1,0 +1,222 @@
+package com.example.sensor_data_transfer;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
+import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+
+//센서값 시작
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.widget.TextView;
+
+
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
+    private Socket socket;  //소켓생성
+    BufferedReader in;      //서버로부터 온 데이터를 읽는다.
+    PrintWriter out;        //서버에 데이터를 전송한다.
+    EditText input;         //화면구성
+    Button button;          //화면구성
+    TextView output;        //화면구성
+    String data;
+
+
+    //센서 시작
+    private SensorManager sensorManager;
+    private Sensor accelerSensor;
+    private Sensor linearAccelerSensor;
+    private float gAccX, gAccY, gAccZ, accX, accY, accZ, lAccX, lAccY, lAccZ ;
+    private float tempX, tempY, tempZ;
+    private double gTotal, total, lTotal;
+    private long lastUpdate = 0;
+    private float alpha = 0.8f;
+    TextView tvgXaxis, tvgYaxis, tvgZaxis, tvXaxis, tvYaxis, tvZaxis, tvlXaxis, tvlYaxis, tvlZaxis, tvgTotal, tvTotal, tvlTotal;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {//앱 시작시 초기화 설정
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        //센서 시작
+        tvgXaxis = (TextView)findViewById(R.id.tvgXaxis);
+        tvgYaxis = (TextView)findViewById(R.id.tvgYaxis);
+        tvgZaxis = (TextView)findViewById(R.id.tvgZaxis);
+        tvXaxis = (TextView)findViewById(R.id.tvXaxis);
+        tvYaxis = (TextView)findViewById(R.id.tvYaxis);
+        tvZaxis = (TextView)findViewById(R.id.tvZaxis);
+        tvlXaxis = (TextView)findViewById(R.id.tvlXaxis);
+        tvlYaxis = (TextView)findViewById(R.id.tvlYaxis);
+        tvlZaxis = (TextView)findViewById(R.id.tvlZaxis);
+        tvgTotal = (TextView)findViewById(R.id.tvgTotal);
+        tvTotal  = (TextView)findViewById(R.id.tvTotal);
+        tvlTotal = (TextView)findViewById(R.id.tvlTotal);
+
+        sensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
+        accelerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        linearAccelerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+
+
+        //start 소켓
+        input = (EditText)findViewById(R.id.input);//글자입력칸을 찾는다.
+        button = (Button)findViewById(R.id.button);//버튼을 찾는다.
+        output = (TextView)findViewById(R.id.output);//글자출력칸을 찾는다.
+
+        //버튼을 누르는 이벤트 발생, 이벤트 제어문이기 때문에 이벤트 발생 때마다 발동된다.
+        //시스템이 처리하는 부분이 무한루프때문에 있더라도 이벤트가 발생하면 자동으로 실행된다.
+
+        button.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                /*
+                final Handler handler = new Handler();
+
+                final Runnable task1 = new Runnable() {
+                    @Override
+                    public void run() {
+                        out.println(String.format("%.2f", accX*10) + "@" + String.format("%.2f", accY*10));
+
+                    }
+                };
+                task1.run();
+                */
+
+            //버튼이 클릭되면 소켓에 데이터를 출력한다.
+                new Thread() {
+                    public void run() {
+                        while(true) {
+                            try {
+                                out.println(String.format("%f", accX * 10) + "@" + String.format("%f", accY * 10));
+                                sleep(100);
+                            }catch(Throwable t){
+
+                            }
+                        }
+                    }
+                }.start();
+
+            }
+        });
+
+        Thread worker = new Thread() {    //worker 를 Thread 로 생성
+            public void run() { //스레드 실행구문
+                try {
+                    //소켓을 생성하고 입출력 스트립을 소켓에 연결한다.
+                    socket = new Socket("192.168.1.90", 8110); //소켓생성
+                    out = new PrintWriter(socket.getOutputStream(), true); //데이터를 전송시 stream 형태로 변환하여                                                                                                                       //전송한다.
+                    in = new BufferedReader(new InputStreamReader(
+                            socket.getInputStream())); //데이터 수신시 stream을 받아들인다.
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                //소켓에서 데이터를 읽어서 화면에 표시한다.
+                try {
+                    while (true) {
+                        data = in.readLine(); // in으로 받은 데이타를 String 형태로 읽어 data 에 저장
+                        output.post(new Runnable() {
+                            public void run() {
+                                output.setText(data); //글자출력칸에 서버가 보낸 메시지를 받는다.
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                }
+            }
+        };
+        worker.start();  //onResume()에서 실행.
+
+
+    }
+
+    @Override
+    protected void onStop() {  //앱 종료시
+        super.onStop();
+        try {
+            socket.close(); //소켓을 닫는다.
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, accelerSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, linearAccelerSensor, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sensorManager.unregisterListener(this);
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if(event.sensor == accelerSensor) {
+            //include gravity
+            gAccX = event.values[0];
+            gAccY = event.values[1];
+            gAccZ = event.values[2];
+
+            tempX = alpha * tempX + (1 - alpha) * event.values[0];
+            tempY = alpha * tempY + (1 - alpha) * event.values[1];
+            tempZ = alpha * tempZ + (1 - alpha) * event.values[2];
+
+            accX = event.values[0] - tempX;
+            accY = event.values[1] - tempY;
+            accZ = event.values[2] - tempZ;
+
+            gTotal = Math.sqrt(Math.pow(gAccX,2) + Math.pow(gAccY, 2) + Math.pow(gAccZ , 2));
+            total = Math.sqrt(Math.pow(accX,2) + Math.pow(accY, 2) + Math.pow(accZ , 2));
+
+            tvgXaxis.setText("X axis : " + String.format("%.2f", gAccX));
+            tvgYaxis.setText("Y axis : " + String.format("%.2f", gAccY));
+            tvgZaxis.setText("Z axis : " + String.format("%.2f", gAccZ));
+            tvgTotal.setText("Total Gravity : "  + String.format("%.2f", gTotal) + " m/s\u00B2");
+
+            tvXaxis.setText("X axis : " + String.format("%.2f", accX));
+            tvYaxis.setText("Y axis : " + String.format("%.2f", accY));
+            tvZaxis.setText("Z axis : " + String.format("%.2f", accZ));
+            tvTotal.setText("Total Gravity : "  + String.format("%.2f", total) + " m/s\u00B2");
+        }
+
+        if(event.sensor == linearAccelerSensor) {
+            //exclude gravity
+            lAccX = event.values[0];
+            lAccY = event.values[1];
+            lAccZ = event.values[2];
+
+            lTotal = Math.sqrt(Math.pow(lAccX,2) + Math.pow(lAccY, 2) + Math.pow(lAccZ , 2));
+
+            tvlXaxis.setText("X axis : " + String.format("%.2f", lAccX));
+            tvlYaxis.setText("Y axis : " + String.format("%.2f", lAccY));
+            tvlZaxis.setText("Z axis : " + String.format("%.2f", lAccZ));
+            tvlTotal.setText("Total Gravity : "  + String.format("%.2f", lTotal) + " m/s\u00B2");
+
+
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+}
+
