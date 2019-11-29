@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+  <style>
+        div.out {
+            width: 200px;
+            height: 60px;
+            background-color: yellow;
+        }
+    </style>
+   <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+   <script>
+    $(document).ready(function () {
+        $("h2").click(function () {
+            $(this).hide();
+        });
+    });
+
+	$(document).ready(function () {
+                    $("input").focus(function () {
+                        $(this).css("background-color", "yellow");
+                    });
+
+                                $("input").blur(function () {
+                                    $(this).css("background-color", "white");
+                                });
+              });
+
+
+			  $(document).ready(function () {
+            $("button").click(function () {
+                $("#dog").animate({ left: '100px' });
+
+            });
+
+        });
+
+		 $(document).ready(function () {
+            $("button").click(function () {
+                $("#dog").show().fadeOut("slow").slideDown("slow");
+            });
+        });
+</script>
+  </head>
+  <body>
+   <h2>클릭하면 사라집니다.</h2>
+   <div class="out">
+        <p>마우스를 여기로 움직이세요.</p>
+
+        <p>0</p>
+    </div>
+	<script>
+        var i = 0;
+        $("div.out").mouseover(function () {
+            $("p:first", this).text("mouse over");
+            $("p:last", this).text(++i);
+
+        })
+    </script>
+	아이디:<input type="text" name="name"><br>
+
+	<div id="log"></div>
+    <script>
+        $(document).mousemove( function (e) {
+            $("#log").text("e.pageX: " + e.pageX + ", e.pageY: " + e.pageY);
+
+        }); 
+	</script>
+
+	<button>Show it</button>
+    <img id="dog" src="chrome.png"
+        alt="" width="120" height="100" style="display: none" />
+    <script>
+        $(document).ready(function () {
+            $("button").click(function () {
+                $("#dog").show("slow");
+
+            });
+        });
+    </script>
+
+
+	 <img id="dog" src="chrome.png"
+
+        alt="" width="120" height="100" style="position: relative" /><br />
+    <button>animate()</button>
+
+	<button>메소드 체이닝 시작</button>
+    <img id="dog" src="chrome.png"
+        alt="" width="120" height="100" style="display: none" />
+  </body>
+   
+</html>
